@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Te amo Shirley</title>
+  <style>
+    body {
+      background-color: #ffe6e6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      flex-direction: column;
+      position: relative;
+    }
+    canvas {
+      position: absolute;
+      z-index: 0;
+    }
+    .pregunta {
+      position: absolute;
+      top: 65%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      opacity: 0;
+      z-index: 2;
+    }
+    .pregunta p {
+      font-size: 2em;
+      color: white;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      margin: 0;
+    }
+    .botones {
+      display: flex;
+      gap: 40px;
+    }
+    #si, #no {
+      padding: 10px 30px;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 10px;
+      background-color: #ff4d4d;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    #no.mover {
+      position: fixed;
+    }
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2em;
+      color: white;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      display: none;
+      z-index: 3;
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="corazon"></canvas>
+
+<div class="pregunta" id="pregunta">
+  <p>¿Tú me amas?</p>
+  <div class="botones">
+    <button id="si">Sí</button>
+    <button id="no">No</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">¡Sabía que me amabas! ¡Ten un bonito día!</div>
+
+<script>
+const canvas = document.getElementById('corazon');
+const ctx = canvas.getContext('2d');
+const pregunta = document.getElementById('pregunta');
+const botonSi = document.getElementById('si');
+const botonNo = document.getElementById('no');
+const overlay = document.getElementById('overlay');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let t = 0;
+let points = [];
+let scale = 10;
+let heartDrawn = false;
+let seMovio = false; // Bandera para saber si ya se movió el botón No
+
+let pulseSpeed = 0.005; // velocidad normal inicial del latido
+
+function heartFunction(t) {
+  let x = 16 * Math.pow(Math.sin(t), 3);
+  let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+  return {x, y};
+}
+
+function drawHeart() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
+  ctx.moveTo(canvas.width/2, canvas.height/2);
+
+  for (let i = 0; i < points.length; i++) {
+    let p = points[i];
+    ctx.lineTo(p.x, p.y);
+  }
+  ctx.strokeStyle = 'red';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  if (heartDrawn) {
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 24px Comic Sans MS';
+    ctx.textAlign = 'center';
+    ctx.fillText('Te amo Shirley', canvas.width/2, canvas.height/2);
+  }
+}
+
+function animateDrawing() {
+  if (t < Math.PI * 2) {
+    let pos = heartFunction(t);
+    points.push({
+      x: canvas.width/2 + pos.x * scale,
+      y: canvas.height/2 - pos.y * scale
+    });
+    t += 0.02;
+    drawHeart();
+    requestAnimationFrame(animateDrawing);
+  } else {
+    heartDrawn = true;
+    setTimeout(() => {
+      pregunta.style.opacity = 1;
+    }, 500);
+    animatePulsing();
+  }
+}
+
+let pulseScale = 1;
+let growing = true;
+
+function animatePulsing() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(canvas.width/2, canvas.height/2);
+  ctx.scale(pulseScale, pulseScale);
+  ctx.translate(-canvas.width/2, -canvas.height/2);
+
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(points[i].x, points[i].y);
+  }
+  ctx.strokeStyle = 'red';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 24px Comic Sans MS';
+  ctx.textAlign = 'center';
+  ctx.fillText('Te amo Shirley', canvas.width/2, canvas.height/2);
+
+  ctx.restore();
+
+  if (growing) {
+    pulseScale += pulseSpeed;
+    if (pulseScale >= 1.05) growing = false;
+  } else {
+    pulseScale -= pulseSpeed;
+    if (pulseScale <= 0.95) growing = true;
+  }
+
+  requestAnimationFrame(animatePulsing);
+}
+
+function moverBotonNo() {
+  if (!seMovio) {
+    botonNo.classList.add('mover');
+    seMovio = true;
+  }
+
+  const maxX = window.innerWidth - botonNo.offsetWidth;
+  const maxY = window.innerHeight - botonNo.offsetHeight;
+
+  const rectSi = botonSi.getBoundingClientRect();
+  
+  let newX, newY;
+  
+  do {
+    newX = Math.random() * maxX;
+    newY = Math.random() * maxY;
+  } while (
+    newX > rectSi.left - 150 && newX < rectSi.right + 150 &&
+    newY > rectSi.top - 150 && newY < rectSi.bottom + 150
+  );
+
+  botonNo.style.left = newX + 'px';
+  botonNo.style.top = newY + 'px';
+}
+
+botonNo.addEventListener('mouseenter', moverBotonNo);
+
+// Cuando se pasa el mouse por encima de "NO" => más lento
+botonNo.addEventListener('mouseenter', () => {
+  pulseSpeed = 0.002; // latido más lento
+});
+// Cuando se sale de "NO" => volver a normal
+botonNo.addEventListener('mouseleave', () => {
+  pulseSpeed = 0.005; // velocidad normal
+});
+
+// Cuando se pasa el mouse por encima de "SI" => más rápido
+botonSi.addEventListener('mouseenter', () => {
+  pulseSpeed = 0.01; // latido más rápido
+});
+// Cuando se sale de "SI" => volver a normal
+botonSi.addEventListener('mouseleave', () => {
+  pulseSpeed = 0.005; // velocidad normal
+});
+
+botonSi.addEventListener('click', () => {
+  overlay.style.display = 'flex';
+});
+
+animateDrawing();
+</script>
+
+</body>
+</html>
